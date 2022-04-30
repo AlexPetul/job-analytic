@@ -1,0 +1,38 @@
+version: '3'
+
+services:
+   web:
+      build:
+         context: ./job_analytic
+         dockerfile: Dockerfile
+      command: uvicorn job_analytic.core.main:app --host 0.0.0.0 --port 8000 --reload
+      ports:
+         - "8000:8000"
+      networks:
+         - job_analytic_network
+      depends_on:
+         -  redis
+   redis:
+      image: redis:alpine
+      networks:
+         - job_analytic_network
+   kafdrop:
+      image: obsidiandynamics/kafdrop
+      restart: "no"
+      ports:
+         - "9000:9000"
+      environment:
+         KAFKA_BROKERCONNECT: "192.168.1.7:19092"
+         JVM_OPTS: "-Xms16M -Xmx48M -Xss180K -XX:-TieredCompilation -XX:+UseStringDeduplication -noverify"
+   frontend:
+      build:
+         context: ./client
+         dockerfile: Dockerfile
+      environment:
+         - PORT=3001
+      ports:
+         -  "3001:3001"
+      stdin_open: true
+
+networks:
+  job_analytic_network:

@@ -1,0 +1,28 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+black = "*"
+isort = "*"
+pre-commit = "*"
+flake8 = "*"
+
+[packages]
+uvicorn = "*"
+fastapi = "*"
+sqlalchemy = "*"
+psycopg2-binary = "*"
+celery = "*"
+redis = "*"
+asyncio = "*"
+aiokafka = "*"
+aioredis = "*"
+asyncpg = "*"
+aiohttp = "*"
+beautifulsoup4 = "*"
+html5lib = "*"
+
+[requires]
+python_version = "3.10"
