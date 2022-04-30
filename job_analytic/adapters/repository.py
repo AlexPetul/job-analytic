@@ -25,6 +25,10 @@ class AbstractRepository(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def get_positions(self) -> List[models.Position]:
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def list_positions(self):
         raise NotImplementedError
 
@@ -67,6 +71,9 @@ class SQLAlchemyRepository(AbstractRepository):
 
     def get_position(self, name: str) -> models.Position:
         return self.session.query(models.Position).filter(models.Position.name == name).first()
+
+    def get_positions(self) -> List[models.Position]:
+        return self.session.query(models.Position).all()
 
     def list_positions(self) -> List[models.Position]:
         return self.session.query(models.Position).offset(0).all()
