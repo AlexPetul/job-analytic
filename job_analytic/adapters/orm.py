@@ -1,7 +1,8 @@
-from sqlalchemy import Column, Integer, String, Table, ForeignKey, MetaData
+from sqlalchemy import Column, ForeignKey, Integer, MetaData, String, Table
 from sqlalchemy.orm import registry
 
 from job_analytic.domain import models
+
 
 mapper_registry = registry()
 metadata = MetaData()
@@ -10,14 +11,14 @@ skill = Table(
     "skill",
     metadata,
     Column("id", Integer, primary_key=True, index=True, autoincrement=True),
-    Column("name", String(300), nullable=False)
+    Column("name", String(300), nullable=False),
 )
 
 position = Table(
     "position",
     metadata,
     Column("id", Integer, primary_key=True, index=True, autoincrement=True),
-    Column("name", String(100), nullable=False)
+    Column("name", String(100), nullable=False),
 )
 
 position_skill = Table(

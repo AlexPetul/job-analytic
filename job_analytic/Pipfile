@@ -10,19 +10,17 @@ pre-commit = "*"
 flake8 = "*"
 
 [packages]
-uvicorn = "*"
-fastapi = "*"
-sqlalchemy = "*"
-psycopg2-binary = "*"
-celery = "*"
-redis = "*"
-asyncio = "*"
-aiokafka = "*"
-aioredis = "*"
-asyncpg = "*"
-aiohttp = "*"
-beautifulsoup4 = "*"
-html5lib = "*"
+uvicorn = {version = "==0.17.*", index = "pypi"}
+fastapi = {version = "==0.75.*", index = "pypi"}
+sqlalchemy = {version = "==1.4.*", index = "pypi"}
+psycopg2-binary = {version = "==2.9.*", index = "pypi"}
+asyncio = {version = "==3.4.*", index = "pypi"}
+aiokafka = {version = "==0.7.*", index = "pypi"}
+aioredis = {version = "==2.0.*", index = "pypi"}
+asyncpg = {version = "==0.25.*", index = "pypi"}
+aiohttp = {version = "==3.8.*", index = "pypi"}
+beautifulsoup4 = {version = "==4.11.*", index = "pypi"}
+html5lib = {version = "==1.1", index = "pypi"}
 
 [requires]
 python_version = "3.10"

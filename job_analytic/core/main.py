@@ -4,15 +4,14 @@ from typing import List
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from job_analytic.adapters import schemas, orm
+from job_analytic.adapters import orm, schemas
 from job_analytic.adapters.repository import SQLAlchemyRepository
 from job_analytic.db.config import SessionLocal
 from job_analytic.domain import models
+from job_analytic.service_layer import api
 from job_analytic.service_layer.queue.consumer import start_consume
-from job_analytic.service_layer.report import get_report
 from job_analytic.service_layer.sync import start_sync
 
-orm.configure_mappers()
 
 app = FastAPI(title="Job Analytic")
 
@@ -25,9 +24,19 @@ app.add_middleware(
 )
 
 
-@app.get("/api/v1/get-stats/{query}", response_model=list[schemas.PositionSkill])
+@app.on_event("startup")
+def on_startup():
+    orm.configure_mappers()
+
+
+@app.get("/api/v1/positions", response_model=List[schemas.Position])
+def get_positions() -> List[models.Position]:
+    return api.get_positions()
+
+
+@app.get("/api/v1/get-stats/{query}", response_model=List[schemas.PositionSkill])
 def get_stats(query: str) -> List[models.PositionSkill]:
-    return get_report(query)
+    return api.get_report(query)
 
 
 @app.post("/app/v1/sync")

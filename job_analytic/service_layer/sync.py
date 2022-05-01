@@ -1,16 +1,17 @@
 import asyncio
-import aiohttp
 import logging
-
-from bs4 import BeautifulSoup
 from collections import defaultdict
 from typing import List
+
+import aiohttp
+from bs4 import BeautifulSoup
 
 from job_analytic.adapters.repository import SQLAlchemyRepository
 from job_analytic.db.config import SessionLocal
 from job_analytic.service_layer.parsers.abstract import BaseParser
 from job_analytic.service_layer.parsers.rabota_by.main import RabotaByParser
 from job_analytic.service_layer.queue.producer import start_producer
+
 
 MAX_SIM_WORKERS = 50
 parser_classes = [RabotaByParser()]
@@ -22,21 +23,22 @@ log.setLevel(logging.DEBUG)
 
 async def get_initial_search_page(parser: BaseParser, position_name: str) -> BeautifulSoup:
     async with aiohttp.ClientSession() as session:
-        response = await session.get("{base_url}{search}".format(
-            base_url=parser.base_url,
-            search=parser.get_interpolated_query_param(position_name)
-        ))
+        response = await session.get(
+            "{base_url}{search}".format(
+                base_url=parser.base_url, search=parser.get_interpolated_query_param(position_name)
+            )
+        )
         content = await response.read()
     return BeautifulSoup(content.decode(), "html5lib")
 
 
 async def get_page_with_vacancies(parser: BaseParser, page: int, position_name: str) -> BeautifulSoup:
     async with aiohttp.ClientSession() as session:
-        response = await session.get("{base_url}{search}&page={page}".format(
-            base_url=parser.base_url,
-            search=parser.get_interpolated_query_param(position_name),
-            page=page
-        ))
+        response = await session.get(
+            "{base_url}{search}&page={page}".format(
+                base_url=parser.base_url, search=parser.get_interpolated_query_param(position_name), page=page
+            )
+        )
         content = await response.read()
     return BeautifulSoup(content.decode(), "html5lib")
 
@@ -69,9 +71,7 @@ async def fetch_worker(queue: asyncio.Queue):
                     return
 
                 skills = await get_skills(
-                    session=session,
-                    parser=queue_item["parser"],
-                    vacancy_link=queue_item["vacancy"]
+                    session=session, parser=queue_item["parser"], vacancy_link=queue_item["vacancy"]
                 )
                 await queue_item["producer"].send("jobs", key=queue_item["position_name"], value=skills)
             finally:
@@ -92,12 +92,7 @@ async def start_sync():
         for parser, vacancies in item.items():
             log.info(f"Found {len(vacancies)} vacancies for {parser[1]}")
             for vacancy in vacancies:
-                await queue.put(dict(
-                    parser=parser[0],
-                    position_name=parser[1],
-                    vacancy=vacancy,
-                    producer=producer
-                ))
+                await queue.put(dict(parser=parser[0], position_name=parser[1], vacancy=vacancy, producer=producer))
 
     for _ in range(MAX_SIM_WORKERS):
         await queue.put(None)
