@@ -12,8 +12,6 @@ from job_analytic.service_layer.queue.consumer import start_consume
 from job_analytic.service_layer import api
 from job_analytic.service_layer.sync import start_sync
 
-orm.configure_mappers()
-
 app = FastAPI(title="Job Analytic")
 
 app.add_middleware(
@@ -23,6 +21,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.on_event("startup")
+def on_startup():
+    orm.configure_mappers()
 
 
 @app.get("/api/v1/positions", response_model=list[schemas.Position])
