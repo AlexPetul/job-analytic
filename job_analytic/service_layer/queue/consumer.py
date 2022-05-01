@@ -12,36 +12,29 @@ from job_analytic.adapters.repository import SQLAlchemyRepository
 from job_analytic.db.config import SessionLocal
 from job_analytic.domain import models
 
+
 log = logging.getLogger(__name__)
 
 
 class AIOKafkaConsumerWrapper(AIOKafkaConsumer):
-
     def __init__(self, redis_db: int, redis_url: str, topics: List[str], *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self._current_offset: Dict[TopicPartition, int] = {}
-        self._storage: Redis = aioredis.from_url(
-            url=redis_url,
-            encoding="utf-8",
-            decode_responses=True,
-            db=redis_db
-        )
+        self._storage: Redis = aioredis.from_url(url=redis_url, encoding="utf-8", decode_responses=True, db=redis_db)
         self._topics = topics
 
     def subscribe_and_set_rebalancer(self):
-
         class SafeRebalancerListener(ConsumerRebalanceListener):
-
             def __init__(self, consumer: AIOKafkaConsumerWrapper, storage: Redis):
                 self._consumer = consumer
                 self._storage = storage
 
             async def on_partitions_revoked(self, revoked: list[TopicPartition]) -> None:
                 if self._consumer.current_offset:
-                    await self._storage.mset(mapping={
-                        str(tp.partition): offset for tp, offset in self._consumer.current_offset.items()
-                    })
+                    await self._storage.mset(
+                        mapping={str(tp.partition): offset for tp, offset in self._consumer.current_offset.items()}
+                    )
 
             async def on_partitions_assigned(self, assigned: list[TopicPartition]) -> None:
                 self._consumer._current_offset = {}
@@ -51,19 +44,13 @@ class AIOKafkaConsumerWrapper(AIOKafkaConsumer):
                         self._consumer.seek(tp, int(offset))
                         self._consumer.set_current_offset(tp, int(offset))
 
-        self.subscribe(
-            topics=self._topics,
-            listener=SafeRebalancerListener(self, self._storage)
-        )
+        self.subscribe(topics=self._topics, listener=SafeRebalancerListener(self, self._storage))
 
     async def save_offset_to_storage(self, key: str, value: int):
         await self._storage.set(key, value)
 
     async def save_and_commit_offset(self, offset: int, partition: int, topic: str):
-        self.set_current_offset(
-            key=TopicPartition(topic, partition),
-            value=offset + 1
-        )
+        self.set_current_offset(key=TopicPartition(topic, partition), value=offset + 1)
         await self.save_offset_to_storage(str(partition), offset + 1)
         await self.commit(self.current_offset)
 
@@ -84,7 +71,7 @@ async def start_consumer_worker() -> AIOKafkaConsumerWrapper:
         group_id="custom-group-id",
         key_deserializer=bytes.decode,
         value_deserializer=lambda x: json.loads(x.decode()),
-        enable_auto_commit=False
+        enable_auto_commit=False,
     )
     consumer.subscribe_and_set_rebalancer()
     await consumer.start()

@@ -1,13 +1,12 @@
 import abc
 from typing import List
 
-from sqlalchemy import update, desc
+from sqlalchemy import desc, update
 
 from job_analytic.domain import models
 
 
 class AbstractRepository(abc.ABC):
-
     @abc.abstractmethod
     def add_skill(self, skill: models.Skill):
         raise NotImplementedError
@@ -54,7 +53,6 @@ class AbstractRepository(abc.ABC):
 
 
 class SQLAlchemyRepository(AbstractRepository):
-
     def __init__(self, session):
         self.session = session
 
@@ -84,12 +82,14 @@ class SQLAlchemyRepository(AbstractRepository):
         self.session.refresh(position_skill)
 
     def get_position_skills(self, name: str):
-        return self.session.query(models.PositionSkill.count, models.Skill.name)\
-            .join(models.Skill)\
-            .join(models.Position)\
-            .filter(models.Position.name == name)\
-            .order_by(desc(models.PositionSkill.count))\
+        return (
+            self.session.query(models.PositionSkill.count, models.Skill.name)
+            .join(models.Skill)
+            .join(models.Position)
+            .filter(models.Position.name == name)
+            .order_by(desc(models.PositionSkill.count))
             .all()
+        )
 
     def get_or_create_skill(self, name: str):
         existing_obj = self.session.query(models.Skill).filter_by(name=name).first()
@@ -101,10 +101,7 @@ class SQLAlchemyRepository(AbstractRepository):
             return new_skill
 
     def position_skill_exists(self, position: models.Position, skill: models.Skill):
-        return self.session\
-            .query(models.PositionSkill)\
-            .filter_by(position_id=position.id, skill_id=skill.id)\
-            .first()
+        return self.session.query(models.PositionSkill).filter_by(position_id=position.id, skill_id=skill.id).first()
 
     def update_position_skill(self, position_skill: models.PositionSkill):
         position_skill.count += 1
