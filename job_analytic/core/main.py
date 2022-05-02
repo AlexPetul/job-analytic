@@ -10,6 +10,7 @@ from job_analytic.db.config import SessionLocal
 from job_analytic.domain import models
 from job_analytic.service_layer import api
 from job_analytic.service_layer.queue.consumer import start_consume
+from job_analytic.service_layer.resources.pool import ResourcePool
 from job_analytic.service_layer.sync import start_sync
 
 
@@ -46,4 +47,12 @@ async def invoke_synchronization():
     for _ in range(2):
         asyncio.ensure_future(start_consume())
     asyncio.ensure_future(start_sync())
-    return {"positions": list(map(lambda x: x.name, repository.list_positions()))}
+    return {"positions": list(map(lambda x: x.name, repository.get_positions()))}
+
+
+@app.on_event("shutdown")
+async def on_shutdown():
+    await asyncio.wait([task for task in asyncio.all_tasks()], timeout=10)
+
+    http_session = ResourcePool().http_session
+    http_session.close()
