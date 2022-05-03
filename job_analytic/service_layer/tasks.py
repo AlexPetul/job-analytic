@@ -5,6 +5,7 @@ import aiohttp
 from aiokafka import AIOKafkaProducer
 from bs4 import BeautifulSoup
 
+from core.settings import settings
 from service_layer.parsers.abstract import BaseParser
 from service_layer.parsers.rabota_by.main import RabotaByParser
 from service_layer.resources.pool import ResourcePool
@@ -57,4 +58,4 @@ async def start_parse(position_name: str) -> defaultdict[BaseParser, List[str]]:
 async def send_to_consumer(producer: AIOKafkaProducer, parser: BaseParser, position_name: str, vacancy: str):
     session = await ResourcePool().http_session
     skills = await get_skills(session=session, parser=parser, vacancy_link=vacancy)
-    await producer.send("jobs", key=position_name, value=skills)
+    await producer.send(settings["KAFKA"]["Host"], key=position_name, value=skills)

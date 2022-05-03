@@ -8,6 +8,7 @@ from aioredis import Redis
 from kafka import TopicPartition
 
 from adapters.repository import SQLAlchemyRepository
+from core.settings import settings
 from db.config import get_session
 from domain import models
 
@@ -65,8 +66,8 @@ async def start_consumer_worker() -> AIOKafkaConsumerWrapper:
     consumer = AIOKafkaConsumerWrapper(
         redis_db=1,
         redis_url="redis://redis/0",
-        topics=["jobs"],
-        bootstrap_servers="192.168.1.7:19092",
+        topics=[settings["KAFKA"]["Topic"]],
+        bootstrap_servers=settings["KAFKA"]["Host"],
         group_id="custom-group-id",
         key_deserializer=bytes.decode,
         value_deserializer=lambda x: json.loads(x.decode()),
