@@ -2,7 +2,7 @@ from typing import List
 
 from bs4 import BeautifulSoup
 
-from job_analytic.service_layer.parsers.abstract import BaseParser
+from service_layer.parsers.abstract import BaseParser
 
 
 class RabotaByParser(BaseParser):

@@ -1,6 +1,5 @@
 import json
 import logging
-from itertools import chain
 from typing import Dict, List
 
 import aioredis
@@ -8,9 +7,9 @@ from aiokafka import AIOKafkaConsumer, ConsumerRebalanceListener
 from aioredis import Redis
 from kafka import TopicPartition
 
-from job_analytic.adapters.repository import SQLAlchemyRepository
-from job_analytic.db.config import SessionLocal
-from job_analytic.domain import models
+from adapters.repository import SQLAlchemyRepository
+from db.config import get_session
+from domain import models
 
 
 log = logging.getLogger(__name__)
@@ -79,20 +78,19 @@ async def start_consumer_worker() -> AIOKafkaConsumerWrapper:
 
 
 async def start_consume():
-    db = SessionLocal()
-    repository = SQLAlchemyRepository(db)
+    repository = SQLAlchemyRepository(get_session())
     consumer = await start_consumer_worker()
     try:
         while True:
             record = await consumer.getone()
             for skill in record.value:
-                skill_obj = repository.get_or_create_skill(name=skill)
-                position = repository.get_position(record.key)
-                existing_position_skill = repository.position_skill_exists(position, skill_obj)
+                skill_obj = await repository.get_or_create_skill(name=skill)
+                position = await repository.get_position(record.key)
+                existing_position_skill = await repository.position_skill_exists(position, skill_obj)
                 if existing_position_skill is not None:
-                    repository.update_position_skill(existing_position_skill)
+                    await repository.update_position_skill(existing_position_skill)
                 else:
-                    repository.add_position_skill(models.PositionSkill(skill_obj.id, position.id))
+                    await repository.add_position_skill(models.PositionSkill(skill_obj.id, position.id))
             await consumer.commit(consumer.current_offset or None)
     finally:
         await consumer.commit(consumer.current_offset or None)
