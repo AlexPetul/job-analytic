@@ -45,7 +45,7 @@ export function App() {
     };
 
     useEffect(() => {
-        fetch("http://192.168.1.7:8000/api/v1/positions")
+        fetch(`http://${process.env["HOST"]}/api/v1/positions`)
             .then(response => response.json())
             .then(responseJson => {
                 setPositions(responseJson);
@@ -53,7 +53,7 @@ export function App() {
     }, [])
 
     const search = (e) => {
-        fetch(`http://192.168.1.7:8000/api/v1/get-stats/${e.target.value}`)
+        fetch(`http://${process.env["HOST"]}/api/v1/get-stats/${e.target.value}`)
             .then(response => response.json())
             .then(responseJson => {
                 let sets = [];
@@ -91,15 +91,6 @@ export function App() {
                             />
                         }
                     />
-                    //     <TextField
-                    //     style={{width: "70%", marginTop: 20, marginBottom: 30}}
-                    //     onKeyPress={(ev) => {
-                    //     if (ev.key === 'Enter') {
-                    //     search(ev)
-                    // }
-                    // }}
-                    //     label="Position"
-                    //     />
                 }
             />
             <Box>
