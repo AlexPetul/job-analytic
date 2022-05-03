@@ -1,10 +1,11 @@
 import asyncio
 import logging
 
-from job_analytic.adapters.repository import SQLAlchemyRepository
-from job_analytic.db.config import SessionLocal
-from job_analytic.service_layer.queue.producer import start_producer
-from job_analytic.service_layer.tasks import send_to_consumer, start_parse
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from adapters.repository import SQLAlchemyRepository
+from service_layer.queue.producer import start_producer
+from service_layer.tasks import send_to_consumer, start_parse
 
 
 log = logging.getLogger(__name__)
@@ -12,17 +13,17 @@ logging.basicConfig(format="[%(asctime)s: %(levelname)s] %(message)s")
 log.setLevel(logging.DEBUG)
 
 
-async def start_sync():
-    repository = SQLAlchemyRepository(SessionLocal())
+async def start_sync(db_session: AsyncSession):
+    repository = SQLAlchemyRepository(db_session)
     producer = await start_producer()
-    data = await asyncio.gather(*[start_parse(position.name) for position in repository.get_positions()])
+    data = await asyncio.gather(*[start_parse(position.name) for position in await repository.get_positions()])
 
     tasks = list()
     for item in data:
-        for parser, vacancies in item.items():
-            log.info(f"Found {len(vacancies)} vacancies for {parser[1]}")
+        for key, vacancies in item.items():
+            log.info(f"Found {len(vacancies)} vacancies for {key[1]}")
             for vacancy in vacancies:
-                task = asyncio.create_task(send_to_consumer(producer, parser[0], parser[1], vacancy))
+                task = asyncio.create_task(send_to_consumer(producer, key.parser_class, key.position_name, vacancy))
                 tasks.append(task)
 
     await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)

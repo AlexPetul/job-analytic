@@ -1,7 +1,7 @@
 from sqlalchemy import Column, ForeignKey, Integer, MetaData, String, Table
 from sqlalchemy.orm import registry
 
-from job_analytic.domain import models
+from domain import models
 
 
 mapper_registry = registry()

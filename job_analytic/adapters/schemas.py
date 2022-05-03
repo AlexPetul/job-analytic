@@ -10,7 +10,7 @@ class Position(BaseModel):
 
 
 class PositionSkill(BaseModel):
-    name: str
+    position_id: int
     count: int
 
     class Config:

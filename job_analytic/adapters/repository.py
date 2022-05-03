@@ -1,38 +1,38 @@
 import abc
 from typing import List
 
-from sqlalchemy import desc
+from sqlalchemy import desc, join, select
 
-from job_analytic.domain import models
+from domain import models
 
 
 class AbstractRepository(abc.ABC):
     @abc.abstractmethod
-    def get_position(self, name: str) -> models.Position:
+    async def get_position(self, name: str) -> models.Position:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_positions(self) -> List[models.Position]:
+    async def get_positions(self) -> List[models.Position]:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_or_create_skill(self, name: str):
+    async def get_or_create_skill(self, name: str):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get_position_skills(self, name: str):
+    async def get_position_skills(self, name: str):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def add_position_skill(self, position_skill: models.PositionSkill):
+    async def add_position_skill(self, position_skill: models.PositionSkill):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def position_skill_exists(self, position: models.Position, skill: models.Skill):
+    async def position_skill_exists(self, position: models.Position, skill: models.Skill):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def update_position_skill(self, position_skill: models.PositionSkill):
+    async def update_position_skill(self, position_skill: models.PositionSkill):
         raise NotImplementedError
 
 
@@ -40,43 +40,48 @@ class SQLAlchemyRepository(AbstractRepository):
     def __init__(self, session):
         self.session = session
 
-    def get_position(self, name: str) -> models.Position:
-        return self.session.query(models.Position).filter(models.Position.name == name).first()
+    async def get_position(self, name: str) -> models.Position:
+        return await self.session.execute(select(models.Position).where(models.Position.name == name)).first()
 
-    def get_positions(self) -> List[models.Position]:
-        return self.session.query(models.Position).all()
+    async def get_positions(self) -> List[models.Position]:
+        result = await self.session.execute(select(models.Position))
+        return result.scalars().all()
 
-    def add_position_skill(self, position_skill: models.PositionSkill):
+    async def add_position_skill(self, position_skill: models.PositionSkill):
         self.session.add(position_skill)
-        self.session.commit()
-        self.session.refresh(position_skill)
+        await self.session.commit()
+        await self.session.refresh(position_skill)
 
-    def get_position_skills(self, name: str):
-        return (
-            self.session.query(models.PositionSkill.count, models.Skill.name)
-            .join(models.Skill)
-            .join(models.Position)
+    async def get_position_skills(self, name: str):
+        p_join = join(models.PositionSkill, models.Position, models.PositionSkill.position_id == models.Position.id)
+        result = await self.session.execute(
+            select(models.PositionSkill)
+            .select_from(p_join)
             .filter(models.Position.name == name)
             .order_by(desc(models.PositionSkill.count))
-            .all()
         )
+        return result.scalars().all()
 
-    def get_or_create_skill(self, name: str):
-        existing_obj = self.session.query(models.Skill).filter_by(name=name).first()
+    async def get_or_create_skill(self, name: str):
+        existing_obj = await self.session.execute(select(models.Skill).where(models.Skill.name == name)).first()
         if existing_obj is not None:
             return existing_obj
         else:
             new_skill = models.Skill(name=name)
             self.session.add(new_skill)
-            self.session.commit()
-            self.session.refresh(new_skill)
+            await self.session.commit()
+            await self.session.refresh(new_skill)
             return new_skill
 
-    def position_skill_exists(self, position: models.Position, skill: models.Skill):
-        return self.session.query(models.PositionSkill).filter_by(position_id=position.id, skill_id=skill.id).first()
+    async def position_skill_exists(self, position: models.Position, skill: models.Skill):
+        return await self.session.execute(
+            select(models.PositionSkill).where(
+                models.PositionSkill.position_id == position.id and models.PositionSkill.skill_id == skill.id
+            )
+        ).first()
 
-    def update_position_skill(self, position_skill: models.PositionSkill):
+    async def update_position_skill(self, position_skill: models.PositionSkill):
         position_skill.count += 1
         self.session.add(position_skill)
-        self.session.commit()
-        self.session.refresh(position_skill)
+        await self.session.commit()
+        await self.session.refresh(position_skill)

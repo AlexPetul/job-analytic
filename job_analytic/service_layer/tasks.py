@@ -1,13 +1,13 @@
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 from typing import List
 
 import aiohttp
 from aiokafka import AIOKafkaProducer
 from bs4 import BeautifulSoup
 
-from job_analytic.service_layer.parsers.abstract import BaseParser
-from job_analytic.service_layer.parsers.rabota_by.main import RabotaByParser
-from job_analytic.service_layer.resources.pool import ResourcePool
+from service_layer.parsers.abstract import BaseParser
+from service_layer.parsers.rabota_by.main import RabotaByParser
+from service_layer.resources.pool import ResourcePool
 
 
 parser_classes = [RabotaByParser()]
@@ -48,7 +48,9 @@ async def start_parse(position_name: str) -> defaultdict[BaseParser, List[str]]:
 
         for page in range(pages):
             page_content = await get_page_with_vacancies(parser, page, position_name)
-            vacancies[(parser, position_name)].extend(parser.get_vacancies(page_content))
+            ParserContext = namedtuple("ParserContext", "parser_class, position_name")
+            key = ParserContext(parser_class=parser, position_name=position_name)
+            vacancies[key].extend(parser.get_vacancies(page_content))
     return vacancies
 
 
